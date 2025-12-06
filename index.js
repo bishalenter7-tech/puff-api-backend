@@ -17,7 +17,9 @@ app.post("/api/ask", async (req, res) => {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${process.env.API_KEY}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://puff-ai-frontend.onrender.com", // your frontend URL (required)
+        "X-Title": "Puff AI" // free-tier requires this
       },
       body: JSON.stringify({
         model: "x-ai/grok-4.1-fast:free",
@@ -29,11 +31,17 @@ app.post("/api/ask", async (req, res) => {
     });
 
     const data = await response.json();
-    res.json({ reply: data?.choices?.[0]?.message?.content || "Puff is thinking too hard 💭✨" });
+
+    res.json({
+      reply: data?.choices?.[0]?.message?.content || "Puff is thinking too hard 💭✨"
+    });
+
   } catch (err) {
+    console.error("Backend Error:", err);
     res.json({ reply: "Network issue! Puff will try again soon 🌸" });
   }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Puff API backend running on port ${PORT}`));
+
