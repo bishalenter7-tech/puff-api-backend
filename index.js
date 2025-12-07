@@ -13,13 +13,18 @@ app.post("/api/ask", async (req, res) => {
   const { message } = req.body;
 
   try {
+    if (!process.env.API_KEY) {
+      console.error("❌ API_KEY not set in environment variables!");
+      return res.json({ reply: "Backend misconfigured: API key missing" });
+    }
+
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${process.env.API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://puff-ai-frontend.onrender.com", // your frontend URL (required)
-        "X-Title": "Puff AI" // free-tier requires this
+        "HTTP-Referer": "https://puff-ai-frontend.onrender.com", // make sure this matches your deployed frontend
+        "X-Title": "Puff AI"
       },
       body: JSON.stringify({
         model: "x-ai/grok-4.1-fast:free",
@@ -32,8 +37,13 @@ app.post("/api/ask", async (req, res) => {
 
     const data = await response.json();
 
+    // 🔹 Debug logs
+    console.log("OpenRouter Status:", response.status);
+    console.log("OpenRouter Response:", data);
+
+    const reply = data?.choices?.[0]?.message?.content;
     res.json({
-      reply: data?.choices?.[0]?.message?.content || "Puff is thinking too hard 💭✨"
+      reply: reply || "Puff is thinking too hard 💭✨"
     });
 
   } catch (err) {
@@ -44,4 +54,6 @@ app.post("/api/ask", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Puff API backend running on port ${PORT}`));
+
+
 
