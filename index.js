@@ -9,14 +9,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// -------------------- API ROUTE --------------------
 app.post("/api/ask", async (req, res) => {
   const { message } = req.body;
 
-  // 🔹 Debug: Check if API key exists
+  // Check API key
   if (!process.env.API_KEY) {
     console.error("❌ API_KEY is missing!");
     return res.status(500).json({ reply: "Server misconfigured: API_KEY missing!" });
   }
+
   console.log("✅ Using API key of length:", process.env.API_KEY.length);
 
   try {
@@ -29,7 +31,8 @@ app.post("/api/ask", async (req, res) => {
         "X-Title": "Puff AI"
       },
       body: JSON.stringify({
-        model: "x-ai/grok-4.1-fast:free",
+        // ✅ Use a valid free-tier OpenRouter model
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "You are Puff AI — a soft, friendly assistant." },
           { role: "user", content: message }
@@ -37,15 +40,14 @@ app.post("/api/ask", async (req, res) => {
       })
     });
 
-    // 🔹 Debug: Check status
     if (!response.ok) {
       console.error("❌ OpenRouter response not OK:", response.status, response.statusText);
+      const errData = await response.json().catch(() => ({}));
+      console.log("🔹 OpenRouter error response:", errData);
       return res.status(response.status).json({ reply: "Error from AI service." });
     }
 
     const data = await response.json();
-
-    // 🔹 Debug: Show raw data
     console.log("🔹 OpenRouter response:", JSON.stringify(data, null, 2));
 
     const reply = data?.choices?.[0]?.message?.content || "Puff is thinking too hard 💭✨";
@@ -57,8 +59,10 @@ app.post("/api/ask", async (req, res) => {
   }
 });
 
+// -------------------- SERVER --------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Puff API backend running on port ${PORT}`));
+
 
 
 
