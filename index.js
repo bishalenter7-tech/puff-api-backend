@@ -12,18 +12,20 @@ app.use(express.json());
 app.post("/api/ask", async (req, res) => {
   const { message } = req.body;
 
-  try {
-    if (!process.env.API_KEY) {
-      console.error("❌ API_KEY not set in environment variables!");
-      return res.json({ reply: "Backend misconfigured: API key missing" });
-    }
+  // 🔹 Debug: Check if API key exists
+  if (!process.env.API_KEY) {
+    console.error("❌ API_KEY is missing!");
+    return res.status(500).json({ reply: "Server misconfigured: API_KEY missing!" });
+  }
+  console.log("✅ Using API key of length:", process.env.API_KEY.length);
 
+  try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${process.env.API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://puff-ai-frontend.onrender.com", // make sure this matches your deployed frontend
+        "HTTP-Referer": "https://puff-ai-frontend.onrender.com",
         "X-Title": "Puff AI"
       },
       body: JSON.stringify({
@@ -35,25 +37,30 @@ app.post("/api/ask", async (req, res) => {
       })
     });
 
+    // 🔹 Debug: Check status
+    if (!response.ok) {
+      console.error("❌ OpenRouter response not OK:", response.status, response.statusText);
+      return res.status(response.status).json({ reply: "Error from AI service." });
+    }
+
     const data = await response.json();
 
-    // 🔹 Debug logs
-    console.log("OpenRouter Status:", response.status);
-    console.log("OpenRouter Response:", data);
+    // 🔹 Debug: Show raw data
+    console.log("🔹 OpenRouter response:", JSON.stringify(data, null, 2));
 
-    const reply = data?.choices?.[0]?.message?.content;
-    res.json({
-      reply: reply || "Puff is thinking too hard 💭✨"
-    });
+    const reply = data?.choices?.[0]?.message?.content || "Puff is thinking too hard 💭✨";
+    res.json({ reply });
 
   } catch (err) {
-    console.error("Backend Error:", err);
-    res.json({ reply: "Network issue! Puff will try again soon 🌸" });
+    console.error("❌ Backend Error:", err);
+    res.status(500).json({ reply: "Network issue! Puff will try again soon 🌸" });
   }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Puff API backend running on port ${PORT}`));
+
+
 
 
 
